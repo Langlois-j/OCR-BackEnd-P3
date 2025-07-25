@@ -1,4 +1,5 @@
-﻿using P3AddNewFunctionalityDotNetCore.Models.Entities;
+﻿using Microsoft.Extensions.Localization;
+using P3AddNewFunctionalityDotNetCore.Models.Entities;
 using P3AddNewFunctionalityDotNetCore.Models.Repositories;
 using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 using System;
@@ -13,6 +14,7 @@ namespace P3AddNewFunctionalityDotNetCore.Models.Services
         private readonly ICart _cart;
         private readonly IOrderRepository _orderRepository;
         private readonly IProductService _productService;
+        private readonly IStringLocalizer<OrderService> _localizer;
 
         public OrderService(ICart cart, IOrderRepository orderRepository, IProductService productService)
         {
