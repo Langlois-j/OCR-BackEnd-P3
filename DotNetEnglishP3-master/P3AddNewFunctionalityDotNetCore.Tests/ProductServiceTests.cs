@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Localization;
 using Moq;
 using P3AddNewFunctionalityDotNetCore.Models;
@@ -7,59 +8,50 @@ using P3AddNewFunctionalityDotNetCore.Models.Repositories;
 using P3AddNewFunctionalityDotNetCore.Models.Services;
 using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using Xunit;
-
 namespace P3AddNewFunctionalityDotNetCore.Tests
 {
     public class ProductServiceTests
     {
+        private readonly Mock<IProductRepository> _mockProductRepo;
+        private readonly Mock<IOrderRepository> _mockOrderRepo;
+        private readonly Mock<IStringLocalizer<ProductService>> _mockLocalizer;
+        private readonly Mock<ICart> _mockCart;
+        private readonly ProductViewModel _invalidProduct = new ProductViewModel
+        {
+            Id = 100,
+            Name = "ProduitName",
+            Description = "Description test",
+            Details = "Détails test",
+            Stock = "15",
+            Price = "18"
+        };
+
         /// <summary>
         /// Take this test method as a template to write your test method.
         /// A test method must check if a definite method does its job:
         /// returns an expected value from a particular set of parameters
         /// </summary>
-        //ProductService LocalProductService = new ProductService(ProductServiceTests.ProductRepositoryMock.Object,
-        //    ProductServiceTests.OrderRepositoryMock.Object, ProductServiceTests.CartMock.Object,
-        //    ProductServiceTests.LocalizerMock.Object);  
-
-        //ProductViewModel TestProduct= new ProductViewModel
-        //{
-        //    Id = 1,
-        //    Name = "Test Product",
-        //    Price = "10.0",
-        //    Stock = "100",
-        //    Description = "This is a test product",
-        //    Details = "Test details"
-        //};
-        //private object _localizer;
-
-
-
-        [Fact]
-        public void ExampleMethod()
+        public ProductServiceTests()
         {
-            // Arrange
-         
-            
-            // Act
-
-
-            // Assert
-            Assert.Equal(1, 1);
+            _mockProductRepo = new Mock<IProductRepository>();
+            _mockOrderRepo = new Mock<IOrderRepository>();
+            _mockLocalizer = new Mock<IStringLocalizer<ProductService>>();
+            _mockCart = new Mock<ICart>();
+            _mockLocalizer.Setup(l => l["MissingName"])             .Returns(new LocalizedString("MissingName", "TextMissingName"));
+            _mockLocalizer.Setup(l => l["MissingPrice"])            .Returns(new LocalizedString("MissingPrice", "TextMissingPrice"));
+            _mockLocalizer.Setup(l => l["PriceNotANumber"])         .Returns(new LocalizedString("PriceNotANumber", "PriceNotANumber"));
+            _mockLocalizer.Setup(l => l["PriceNotGreaterThanZero"]) .Returns(new LocalizedString("PriceNotGreaterThanZero", "TextPriceNotGreaterThanZero"));
+            _mockLocalizer.Setup(l => l["MissingStock"]).Returns(new LocalizedString("MissingStock", "TexMissingStock"));
+            _mockLocalizer.Setup(l => l["StockNotAnInteger"]).Returns(new LocalizedString("StockNotAnInteger", "TextStockNotAnInteger"));
+            _mockLocalizer.Setup(l => l["StockNotGreaterThanZero"]).Returns(new LocalizedString("StockNotGreaterThanZero", "TextStockNotGreaterThanZero"));
         }
-        // TODO write test methods to ensure a correct coverage of all possibilities
         [Fact]
-        public void GetOneProduct_ReturnProduct()
+        public void GetProductById_ReturnProduct()
         {
             // Arrange
-            Cart LocalCart = new Cart();
-            //a traiter en mok Pour connection
-            //ProductRepository LocalProductRepo = new ProductRepository();
-            //OrderRepository LocalOrderRepo = new OrderRepository();
-
-            var OrderRepo = new Mock<IOrderRepository>();
-            var mockLocalizer = new Mock<Microsoft.Extensions.Localization.IStringLocalizer<ProductService>>();
-
+        
             var expectedProduct = new Product
             {
                 Id = 1,
@@ -69,77 +61,185 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                 Price = 10.0,
                 Quantity = 100
             };
-            
-            //mockCart.AddItem(expectedProduct, 1);
-            //mockCart.Setup(r => r.GetProductById(1)).Returns(expectedProduct);
 
-            var service = new ProductService(LocalCart,null, null, mockLocalizer.Object);
-            //ProductService(ICart cart, IProductRepository productRepository,IOrderRepository orderRepository, IStringLocalizer < ProductService > localizer)
+            _mockProductRepo.Setup(r => r.GetAllProducts()).Returns(new List<Product> { expectedProduct });
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+
             // Act
-            var result = service.GetProductById(1);
-
+            var result = service.GetProductById(expectedProduct.Id);
             // Assert
             Assert.NotNull(result);
             Assert.Equal(expectedProduct.Id, result.Id);
         }
         [Fact]
-        public void CkeckProduct_ReturnMissingName()
+        public void CheckProductModelErrors_ReturnsError_WhenNameIsMissing()
         {
             // Arrange
-
-            //ProductViewModel LocalProduct = TestProduct;
-            //    LocalProduct.Name = "";
-
+           
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Price = null; // Simulate missing name
+           
             // Act
-          //  List<string> errors = Productservice.CheckProductModelErrors(LocalProduct);
+            var errors = service.CheckProductModelErrors(_invalidProduct);
 
             // Assert
-            // Assert.Equal(errors[0], _localizer["MissingName"]);
-            Assert.Equal(1, 1);
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("MissingPrice") || e.Contains("TextMissingPrice")));
         }
-        public void CkeckProduct_ReturnMissingPrice()
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenPriceNotANumber()
         {
             // Arrange
 
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Price = "Price"; // Simulate missing name
 
             // Act
-
+            var errors = service.CheckProductModelErrors(_invalidProduct);
 
             // Assert
-            Assert.Equal(1, 1);
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("PriceNotANumber") || e.Contains("TextPriceNotANumber")));
         }
-        public void AddProduct_ReturnNewProduct()
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenPriceNotGreaterThanZero()
         {
             // Arrange
 
-
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Price = "0"; // Simulate missing name
+           
             // Act
-
+            var errors = service.CheckProductModelErrors(_invalidProduct);
 
             // Assert
-            Assert.Equal(1, 1);
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("PriceNotGreaterThanZero") || e.Contains("TextPriceNotGreaterThanZero")));
         }
-        public void RemoveProduct_ReturnLessProducte()
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenMissingStock()
         {
             // Arrange
 
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Stock = null; // Simulate missing name
 
             // Act
-
+            var errors = service.CheckProductModelErrors(_invalidProduct);
 
             // Assert
-            Assert.Equal(1, 1);
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("MissingStock") || e.Contains("TextMissingStock")));
         }
-        public void UpdateProduct_ReturnNewQuantity()
+
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenStockNotGreaterThanZero()
         {
             // Arrange
 
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Stock = "-1"; // Simulate missing name
 
             // Act
-
+            var errors = service.CheckProductModelErrors(_invalidProduct);
 
             // Assert
-            Assert.Equal(1, 1);
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("StockNotGreaterThanZero") || e.Contains("TextStockNotGreaterThanZero")));
+        }
+
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenStockNotAnInteger()
+        {
+            // Arrange
+
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Stock = "null"; // Simulate missing name
+
+            // Act
+            var errors = service.CheckProductModelErrors(_invalidProduct);
+
+            // Assert
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("StockNotAnInteger") || e.Contains("TextStockNotAnInteger")));
+        }
+
+        [Fact]
+        public void CheckProductModelErrors_ReturnsError_WhenPriceIsMissing()
+        {
+            // Arrange
+
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            _invalidProduct.Price = null; // Simulate missing name
+
+            // Act
+            var errors = service.CheckProductModelErrors(_invalidProduct);
+
+            // Assert
+            Assert.All(errors, e => Assert.NotNull(e));
+            Assert.Contains(errors, e => e != null && (e.Contains("PriceIsMissing") || e.Contains("TextPriceIsMissing")));
+        }
+
+        [Fact]
+        public void SaveProduct_ShouldCallRepositoryWithCorrectProduct()
+        {
+            // Arrange
+            var productViewModel = new ProductViewModel
+            {
+                Id = 92,
+                Name = "Produit SaveTest",
+                Description = "Description test",
+                Details = "Détails test",
+                Stock = "15",
+                Price = "18"//Valeur entiere pour simplifier le test vis à vis de la culture
+            };
+            //pour le prix aevx la culture soit Forcer la culture ,et , Pour FR et . pour EN  sois mettre en fonction de la culture par defaut
+            var service = new ProductService(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            // Act
+            service.SaveProduct(productViewModel);
+            // Assert
+            //test l'ajout d'un produit dans le panier
+            _mockProductRepo.Verify(r => r.SaveProduct(It.Is<Product>(p => 
+                p.Name == productViewModel.Name &&
+                p.Description == productViewModel.Description &&
+                p.Details == productViewModel.Details &&
+                p.Quantity == int.Parse(productViewModel.Stock) &&
+                p.Price == double.Parse(productViewModel.Price)
+            )), Times.Once);
+        }
+        [Fact]
+        public void DeleteProduct_ShouldRemoveProductFromCartAndRepository()
+        {
+            // Arrange
+            int productId = 90;
+            var product = new Product { Id = productId, Name = "DeleteTest" };
+            var service = new Mock<ProductService>(_mockCart.Object, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+
+            // Simulation le repo pour retourner le produit attendu
+            _mockProductRepo.Setup(r => r.GetAllProducts()).Returns(new List<Product> { product });
+            // Act
+            service.Object.DeleteProduct(productId);
+            // Assert
+            _mockCart.Verify(c => c.RemoveLine(product), Times.Once);// vérifie si l'appel à été fait au moins une fois et qu'une seulle fois
+            _mockProductRepo.Verify(r => r.DeleteProduct(productId), Times.Once);// vérifie si l'appel à été fait au moins une fois et qu'une seulle fois
+        }
+        [Fact]
+        public void UpdateProductQuantities_ShouldCallUpdateProductStocksForEachCartLine()
+        {
+            // Arrange
+            int productQuantity = 8;
+        
+            var product = new Product { Id = 91, Name = "Product 8" };
+        
+            var cart = new Cart();
+            cart.AddItem(product, productQuantity);
+         
+            var service = new ProductService(cart, _mockProductRepo.Object, _mockOrderRepo.Object, _mockLocalizer.Object);
+            // Act
+            service.UpdateProductQuantities();
+            // Assert
+            _mockProductRepo.Verify(r => r.UpdateProductStocks(product.Id, productQuantity), Times.Once);// vérifie si l'appel à été fait au moins une fois et qu'une seulle fois
+
         }
     }
 }
