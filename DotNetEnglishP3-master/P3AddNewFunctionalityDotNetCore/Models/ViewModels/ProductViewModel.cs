@@ -1,12 +1,24 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using System;
+using System.Resources;
+using System.Reflection;
+using System.Globalization;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.ComponentModel.DataAnnotations;
+using P3AddNewFunctionalityDotNetCore.Resources.Models.Services;
+
 
 namespace P3AddNewFunctionalityDotNetCore.Models.ViewModels
 {
     public class ProductViewModel
     {
+        private static ResourceManager resourceManager = new ResourceManager("P3.Resources.Models.Services.ProductServicesRessources", Assembly.GetExecutingAssembly());
+        private static CultureInfo resourceCulture;
+
         [BindNever]
         public int Id { get; set; }
-
+        [Required(
+            ErrorMessageResourceType = typeof(ProductService),
+            ErrorMessageResourceName = nameof(ProductService.MissingName))]
         public string Name { get; set; }
 
         public string Description { get; set; }
