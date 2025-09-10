@@ -11,7 +11,7 @@ namespace P3AddNewFunctionalityDotNetCore.Models.ViewModels
 {
     public class ProductViewModel
     {
-        private static ResourceManager resourceManager = new ResourceManager("P3.Resources.Models.Services.ProductServicesRessources", Assembly.GetExecutingAssembly());
+        private static ResourceManager resourceManager = new ResourceManager("P3AddNewFunctionalityDotNetCore.Resources.Models.Services.ProductServicesRessources", Assembly.GetExecutingAssembly());
         private static CultureInfo resourceCulture;
 
         [BindNever]
@@ -20,13 +20,17 @@ namespace P3AddNewFunctionalityDotNetCore.Models.ViewModels
             ErrorMessageResourceType = typeof(ProductService),
             ErrorMessageResourceName = nameof(ProductService.MissingName))]
         public string Name { get; set; }
-
+   
         public string Description { get; set; }
 
         public string Details { get; set; }
-
+        [Required(
+          ErrorMessageResourceType = typeof(ProductService),
+          ErrorMessageResourceName = nameof(ProductService.StockNotGreaterThanZero))]
         public string Stock { get; set; }
-
+        [Required(
+          ErrorMessageResourceType = typeof(ProductService),
+          ErrorMessageResourceName = nameof(ProductService.PriceNotGreaterThanZero))]
         public string Price { get; set; }
     }
 }
