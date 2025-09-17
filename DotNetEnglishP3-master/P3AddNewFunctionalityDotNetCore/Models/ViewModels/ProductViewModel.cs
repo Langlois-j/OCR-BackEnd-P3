@@ -26,11 +26,27 @@ namespace P3AddNewFunctionalityDotNetCore.Models.ViewModels
         public string Details { get; set; }
         [Required(
           ErrorMessageResourceType = typeof(ProductService),
-          ErrorMessageResourceName = nameof(ProductService.StockNotGreaterThanZero))]
+          ErrorMessageResourceName = nameof(ProductService.MissingStock))]
+        [Range(
+            1, int.MaxValue,
+            ErrorMessageResourceType = typeof(ProductService),
+            ErrorMessageResourceName = nameof(ProductService.StockNotGreaterThanZero))]
+        [RegularExpression(
+            @"^-?\d+$",// expession pour tester un entier
+            ErrorMessageResourceType = typeof(ProductService),
+            ErrorMessageResourceName = nameof(ProductService.StockNotAnInteger))]
         public string Stock { get; set; }
         [Required(
           ErrorMessageResourceType = typeof(ProductService),
-          ErrorMessageResourceName = nameof(ProductService.PriceNotGreaterThanZero))]
+          ErrorMessageResourceName = nameof(ProductService.MissingPrice))]
+        [Range(
+            1, int.MaxValue,
+            ErrorMessageResourceType = typeof(ProductService),
+            ErrorMessageResourceName = nameof(ProductService.PriceNotGreaterThanZero))]
+        [RegularExpression(
+           @"^-?\d+([.,]\d+)?$",// expression pour tester un nombre
+            ErrorMessageResourceType = typeof(ProductService),
+            ErrorMessageResourceName = nameof(ProductService.PriceNotANumber))]
         public string Price { get; set; }
     }
 }
