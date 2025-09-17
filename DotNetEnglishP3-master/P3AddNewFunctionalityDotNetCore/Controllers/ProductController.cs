@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using P3AddNewFunctionalityDotNetCore.Models;
+using P3AddNewFunctionalityDotNetCore.Models.Entities;
 using P3AddNewFunctionalityDotNetCore.Models.Services;
 using P3AddNewFunctionalityDotNetCore.Models.ViewModels;
 using System.Collections.Generic;
@@ -32,6 +34,7 @@ namespace P3AddNewFunctionalityDotNetCore.Controllers
 
         [Authorize]
         public ViewResult Create()
+
         {
             return View();
         }
@@ -42,6 +45,18 @@ namespace P3AddNewFunctionalityDotNetCore.Controllers
         {
             _productService.DeleteProduct(id);
             return RedirectToAction("Admin");
+        }
+        public IActionResult CreateProduct(ProductViewModel product)
+        {
+            if (ModelState.IsValid)
+            {
+                _productService.SaveProduct(product);
+                return View("Admin", _productService.GetAllProductsViewModel().OrderByDescending(p => p.Id));
+            }
+            else
+            {
+                return View();
+            }
         }
     }
 }

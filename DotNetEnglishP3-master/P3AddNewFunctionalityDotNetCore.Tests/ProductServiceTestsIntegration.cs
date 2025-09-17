@@ -47,10 +47,10 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             service.SaveProduct(testProduct);
 
             // Assert
-            var VarControle = context.Product.FirstOrDefault(p=> p.Name == testProduct.Name);
-            Assert.NotNull(VarControle);
-            Assert.Equal(10, VarControle.Quantity);
-            Assert.Equal(20, VarControle.Price);
+            var product = context.Product.FirstOrDefault(p=> p.Name == testProduct.Name);
+            Assert.NotNull(product);
+            Assert.Equal(10, product.Quantity);
+            Assert.Equal(20, product.Price);
             //netoyage de la base
             context.Database.EnsureDeleted();
         }
@@ -64,7 +64,7 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var cart = new Cart();
             var service = new ProductService(cart, repo, orderRepo, null);
             //Gestion du Produit
-            var MyProduct = new Product
+            var myproduct = new Product
             {
                 Name = "Produit Test",
                 Description = "Description",
@@ -72,15 +72,15 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
                 Quantity = 10,
                 Price = 20
             };
-            context.Product.Add(MyProduct);
+            context.Product.Add(myproduct);
             context.SaveChanges();//maj des ID
 
             // Act
 
-            service.DeleteProduct(MyProduct.Id);
+            service.DeleteProduct(myproduct.Id);
             // Assert
-            var VarControle = context.Product.FirstOrDefault(p => p.Name == MyProduct.Name);
-            Assert.Null(VarControle);
+            var product = context.Product.FirstOrDefault(p => p.Name == myproduct.Name);
+            Assert.Null(product);
             //netoyage de la base
             context.Database.EnsureDeleted();
         }
@@ -93,30 +93,30 @@ namespace P3AddNewFunctionalityDotNetCore.Tests
             var orderRepo = new OrderRepository(context);
             var cart = new Cart();
             var service = new ProductService(cart, repo, orderRepo, null);
-            int QuantityStart = 15;
-            int QuantityToRemove = 5;
+            int start = 15;
+            int remove = 5;
 
 
             //Gestion du Produit
-            var MyProduct = new Product
+            var myproduct = new Product
             {
                 Name = "Produit Test",
                 Description = "Description",
                 Details = "Detail",
-                Quantity = QuantityStart,
+                Quantity = start,
                 Price = 20
             };
-            context.Product.Add(MyProduct);
+            context.Product.Add(myproduct);
             context.SaveChanges();//maj des ID
-            cart.AddItem(MyProduct, QuantityToRemove);
+            cart.AddItem(myproduct, remove);
 
             // Act
             service.UpdateProductQuantities();
 
             // Assert
-            var product = context.Product.FirstOrDefault(p => p.Id == MyProduct.Id);
+            var product = context.Product.FirstOrDefault(p => p.Id == myproduct.Id);
             Assert.NotNull(product);
-            Assert.Equal(QuantityStart - QuantityToRemove, product.Quantity);
+            Assert.Equal(start - remove, product.Quantity);
 
             //netoyage de la base
             context.Database.EnsureDeleted();

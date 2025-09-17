@@ -23,7 +23,12 @@ namespace P3AddNewFunctionalityDotNetCore.Models
             }
             else
             {
+                if (line.Quantity + quantity > product.Quantity)
+                {
+                    return;
+                }
                 line.Quantity += quantity;
+                return;
             }
         }
 
